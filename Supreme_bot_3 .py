@@ -1,6 +1,3 @@
-import datetime
-import time
-
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
@@ -16,7 +13,7 @@ class Example(QListWidget):
 
         self.setWindowTitle('Supreme Bot')
         self.setStyleSheet("background-color: black;")
-        self.setFixedSize(900, 570)
+        self.setFixedSize(950, 580)
 
         self.payment_data_text = QLabel(self)
         self.payment_data_text.setText("Payment data:")
@@ -332,10 +329,10 @@ class Example(QListWidget):
         self.cancel_button.clicked.connect(self.cancel_purchase_func)
         self.cancel_button.move(300, 520)
 
-        self.console_info = QListWidget(self)
-        self.console_info.setFont(QFont('SansSerif', 12))
+        self.console_info = QTextBrowser(self)
+        self.console_info.setFont(QFont('SansSerif', 11))
         self.console_info.setStyleSheet("border: 1px solid red; color: white;")
-        self.console_info.resize(270, 500)
+        self.console_info.resize(320, 500)
         self.console_info.move(610, 20)
 
         self.open_website = QPushButton('Upcoming drop', self)
@@ -348,7 +345,14 @@ class Example(QListWidget):
         info = get_info()
 
         if info:
-            info_countries = {'GB': 'UK', 'NB': 'UK (N. IRELAND)', 'AT': 'AUSTRIA', 'BY': 'BELARUS', 'BE': 'BELGIUM', 'BG': 'BULGARIA', 'HR': 'CROATIA', 'CY': 'CYPRUS', 'CZ': 'CZECH REPUBLIC', 'DK': 'DENMARK', 'EE': 'ESTONIA', 'FI': 'FINLAND', 'FR': 'FRANCE', 'DE': 'GERMANY', 'GR': 'GREECE', 'HU': 'HUNGARY', 'IS': 'ICELAND', 'IE': 'IRELAND', 'IT': 'ITALY', 'LV': 'LATVIA', 'LT': 'LITHUANIA', 'LU': 'LUXEMBOURG', 'MT': 'MALTA', 'MC': 'MONACO', 'NL': 'NETHERLANDS', 'NO': 'NORWAY', 'PL': 'POLAND', 'PT': 'PORTUGAL', 'RO': 'ROMANIA', 'RU': 'RUSSIA', 'SK': 'SLOVAKIA', 'SI': 'SLOVENIA', 'ES': 'SPAIN', 'SE': 'SWEDEN', 'CH': 'SWITZERLAND', 'TR': 'TURKEY'}
+            info_countries = {'GB': 'UK', 'NB': 'UK (N. IRELAND)', 'AT': 'AUSTRIA', 'BY': 'BELARUS', 'BE': 'BELGIUM',
+                              'BG': 'BULGARIA', 'HR': 'CROATIA', 'CY': 'CYPRUS', 'CZ': 'CZECH REPUBLIC',
+                              'DK': 'DENMARK', 'EE': 'ESTONIA', 'FI': 'FINLAND', 'FR': 'FRANCE', 'DE': 'GERMANY',
+                              'GR': 'GREECE', 'HU': 'HUNGARY', 'IS': 'ICELAND', 'IE': 'IRELAND', 'IT': 'ITALY',
+                              'LV': 'LATVIA', 'LT': 'LITHUANIA', 'LU': 'LUXEMBOURG', 'MT': 'MALTA', 'MC': 'MONACO',
+                              'NL': 'NETHERLANDS', 'NO': 'NORWAY', 'PL': 'POLAND', 'PT': 'PORTUGAL', 'RO': 'ROMANIA',
+                              'RU': 'RUSSIA', 'SK': 'SLOVAKIA', 'SI': 'SLOVENIA', 'ES': 'SPAIN', 'SE': 'SWEDEN',
+                              'CH': 'SWITZERLAND', 'TR': 'TURKEY'}
             self.customer_name_info.setText(info["name"])
             self.customer_mail_info.setText(info['email'])
             self.customer_tel_info.setText(info['tel'])
@@ -362,9 +366,10 @@ class Example(QListWidget):
             self.customer_card_exp_year_info.setCurrentText(info['exp_year'])
             self.customer_card_number_info.setText(info['card_number'])
             self.customer_cvv_info.setText(info['cvv'])
+        self.bot = None
 
     def add_to_console(self, text):
-        self.console_info.insertItem(0, text)
+        self.console_info.append(text)
 
     def open_site(self):
         QDesktopServices.openUrl(QUrl('https://supremecommunity.ru/Items/DropListLast'))
@@ -381,15 +386,22 @@ class Example(QListWidget):
         self.product_color_info.setText('')
 
     def cancel_purchase_func(self):
-        if self.bot:
-            self.thread.wait(1)
+        if self.bot and self.bot.is_running:
+            self.bot.is_running = False
+            self.thread.setTerminationEnabled()
             self.thread.terminate()
+            self.thread.wait()
 
     def confirm_purchase_func(self):
+        if self.bot and self.thread:
+            self.thread.setTerminationEnabled()
+            self.thread.terminate()
+            self.thread.wait()
+        self.console_info.setText('')
         items = list()
         drop_date = (int(self.purchase_date_year_info.currentText()),
-                                  int(self.purchase_date_month_info.currentText()),
-                                  int(self.purchase_date_day_info.currentText()))
+                     int(self.purchase_date_month_info.currentText()),
+                     int(self.purchase_date_day_info.currentText()))
         for product in range(self.cart_info.count()):
             category, name, color, size = self.cart_info.item(product).text().split("--")
             items.append({'name': name, 'size': size, 'color': color, 'category': category})
@@ -397,15 +409,15 @@ class Example(QListWidget):
         if items:
             add_items(items)
             if get_info():
+
                 self.thread = QThread()
-                self.bot = None
                 self.bot = Bot(drop_date)
                 self.bot.moveToThread(self.thread)
                 self.bot.signals.result.connect(self.add_to_console)
                 self.bot.signals.finished.connect(self.add_to_console)
                 self.thread.started.connect(self.bot.run)
                 self.thread.start()
-                # run_parser.main(drop_date)
+                print(self.bot)
             else:
                 self.payment_exception.setText('Fill in payment data')
         else:
@@ -419,7 +431,13 @@ class Example(QListWidget):
             self.cart_info.takeItem(self.cart_info.row(item))
 
     def save_payment_func(self):
-        countries = {'UK': 'GB', 'UK (N. IRELAND)': 'NB', 'AUSTRIA': 'AT', 'BELARUS': 'BY', 'BELGIUM': 'BE', 'BULGARIA': 'BG', 'CROATIA': 'HR', 'CYPRUS': 'CY', 'CZECH REPUBLIC': 'CZ', 'DENMARK': 'DK', 'ESTONIA': 'EE', 'FINLAND': 'FI', 'FRANCE': 'FR', 'GERMANY': 'DE', 'GREECE': 'GR', 'HUNGARY': 'HU', 'ICELAND': 'IS', 'IRELAND': 'IE', 'ITALY': 'IT', 'LATVIA': 'LV', 'LITHUANIA': 'LT', 'LUXEMBOURG': 'LU', 'MALTA': 'MT', 'MONACO': 'MC', 'NETHERLANDS': 'NL', 'NORWAY': 'NO', 'POLAND': 'PL', 'PORTUGAL': 'PT', 'ROMANIA': 'RO', 'RUSSIA': 'RU', 'SLOVAKIA': 'SK', 'SLOVENIA': 'SI', 'SPAIN': 'ES', 'SWEDEN': 'SE', 'SWITZERLAND': 'CH', 'TURKEY': 'TR'}
+        countries = {'UK': 'GB', 'UK (N. IRELAND)': 'NB', 'AUSTRIA': 'AT', 'BELARUS': 'BY', 'BELGIUM': 'BE',
+                     'BULGARIA': 'BG', 'CROATIA': 'HR', 'CYPRUS': 'CY', 'CZECH REPUBLIC': 'CZ', 'DENMARK': 'DK',
+                     'ESTONIA': 'EE', 'FINLAND': 'FI', 'FRANCE': 'FR', 'GERMANY': 'DE', 'GREECE': 'GR', 'HUNGARY': 'HU',
+                     'ICELAND': 'IS', 'IRELAND': 'IE', 'ITALY': 'IT', 'LATVIA': 'LV', 'LITHUANIA': 'LT',
+                     'LUXEMBOURG': 'LU', 'MALTA': 'MT', 'MONACO': 'MC', 'NETHERLANDS': 'NL', 'NORWAY': 'NO',
+                     'POLAND': 'PL', 'PORTUGAL': 'PT', 'ROMANIA': 'RO', 'RUSSIA': 'RU', 'SLOVAKIA': 'SK',
+                     'SLOVENIA': 'SI', 'SPAIN': 'ES', 'SWEDEN': 'SE', 'SWITZERLAND': 'CH', 'TURKEY': 'TR'}
         info_data = dict()
         info_data['name'] = self.customer_name_info.text()
         info_data['email'] = self.customer_mail_info.text()
@@ -484,12 +502,8 @@ class Example(QListWidget):
             self.payment_exception.setText('Not all data inserted')
 
 
-def main():
+if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = Example()
     window.show()
     sys.exit(app.exec_())
-
-
-if __name__ == "__main__":
-    main()

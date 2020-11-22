@@ -67,11 +67,7 @@ def make_checkout_parameters(s, profile_data):
     return checkout_params
 
 
-def send_checkout_request(s, delay, profile_data, start_checkout_time):
-    """
-    Wait for the timer time and send checkout request,
-    Return the content from the checkout request.
-    """
+def send_checkout_request(s, delay, profile_data, start_checkout_time, sender):
     print("in send_checkout_request")
     headers = {
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/80.0.3987.95 Mobile/15E148 Safari/604.1',
@@ -87,12 +83,12 @@ def send_checkout_request(s, delay, profile_data, start_checkout_time):
 
     checkout_params = make_checkout_parameters(s, profile_data)
     print("checkout_params", checkout_params)
+    sender(f"Sleeping for {delay}s")
     time.sleep(delay)
     checkout_request = s.post("https://www.supremenewyork.com/checkout.json", headers=headers, data=checkout_params)
     print("checkout_request=", checkout_request)
-    total_checkout_time = round(time.time() - start_checkout_time, 2)
-    print("time =", total_checkout_time)
-    # To console: Sent checkout data, total_checkout_time seconds
+    sender("Checkout request was sent")
+    sender(f"Time: {round(time.time() - start_checkout_time, 2)}s")
     return checkout_request
 
 
@@ -100,7 +96,6 @@ def get_order_id_status(s, order_id):
     """
     Sends a request and gets order_id status
     """
-    print("in get_slug_status")
     headers = {
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/80.0.3987.95 Mobile/15E148 Safari/604.1',
         'Accept': '*/*',
@@ -127,42 +122,33 @@ def display_order_id_status(s, checkout_response):
     while True:
         slug_status = get_order_id_status(s, order_id)
         if slug_status == "queued":
-            # To console: Getting Order Status
-            print("queued")
             return "queued"
         elif slug_status == "paid":
-            # To console: Done! Check Email!
-            print("paid")
             return "paid"
         elif slug_status == "failed":
-            # To console: Checkout Failed
-            print("failed")
             return "failed"
-        time.sleep(10)
+        time.sleep(5)
 
 
-def get_order_status(s, checkout_request):
-    """
-    After sending checkout details, we check to see if the purchase
-    instantly failed or if our order is queued.
-    If it doesn't instantly fail, display the status of our checkout,
-    otherwise restart the program.
-    """
-
+def get_order_status(s, checkout_request, sender):
     checkout_response = checkout_request.json()
     print("checkout_response=", checkout_response)
-    if checkout_response["status"] == "failed":
-        # To console: Checkout Failed
-        print("Checkout Failed")
-        return False
-
-    elif checkout_response["status"] == "queued":
+    if checkout_response["status"] == "queued":
         status = display_order_id_status(s, checkout_response)
         while status == "queued":
             status = display_order_id_status(s, checkout_response)
             time.sleep(3)
-            print("status=", status)
+            sender(f"Waiting for status: status ({status})")
         if status == "failed":
+            sender("Checkout failed")
             return False
         else:
+            sender("Checkout Successful")
+            sender("Check your email")
             return True
+    elif checkout_response["status"] == "paid":
+        sender("Checkout Successful")
+        sender("Check your email")
+    else:
+        sender("Checkout failed")
+        return False
