@@ -40,7 +40,7 @@ def add_to_cart(item_id, size_id, style_id, session=0):
             return s
 
 
-def make_checkout_parameters(s, profile_data):
+def make_checkout_parameters(s, profile_data, token):
     """
     returns checkout parameters.
     """
@@ -48,26 +48,47 @@ def make_checkout_parameters(s, profile_data):
     cookie_sub = s.cookies.get_dict()["pure_cart"]
     print("cookies=", s.cookies.get_dict())
     print("cookie_sub", cookie_sub)
-    checkout_params = {"order[billing_name]": profile_data["name"],
-                       "order[email]": profile_data["email"],
-                       "order[tel]": profile_data["tel"],
-                       "order[billing_address]": profile_data["address_1"],
-                       "order[billing_address_2]": profile_data["address_2"],
-                       "order[billing_city]": profile_data["city"],
-                       "order[billing_zip]": profile_data["zip"],
-                       "order[billing_country]": profile_data["country"],
-                       "same_as_billing_address": 1,
-                       "credit_card[type]": profile_data["card_type"],
-                       "credit_card[cnb]": profile_data["card_number"],
-                       "credit_card[month]": profile_data["exp_month"],
-                       "credit_card[year]": profile_data["exp_year"],
-                       "credit_card[ovv]": profile_data["cvv"]
-                       }
+    if token:
+        checkout_params = {"order[billing_name]": profile_data["name"],
+                           "order[email]": profile_data["email"],
+                           "order[tel]": profile_data["tel"],
+                           "order[billing_address]": profile_data["address_1"],
+                           "order[billing_address_2]": profile_data["address_2"],
+                           "order[billing_city]": profile_data["city"],
+                           "order[billing_zip]": profile_data["zip"],
+                           "order[billing_country]": profile_data["country"],
+                           "same_as_billing_address": 1,
+                           "credit_card[type]": profile_data["card_type"],
+                           "credit_card[cnb]": profile_data["card_number"],
+                           "credit_card[month]": profile_data["exp_month"],
+                           "credit_card[year]": profile_data["exp_year"],
+                           "credit_card[ovv]": profile_data["cvv"],
+                           "order[terms]": 1,
+                           "g-recaptcha-response": token
+                           }
+
+    else:
+        checkout_params = {"order[billing_name]": profile_data["name"],
+                           "order[email]": profile_data["email"],
+                           "order[tel]": profile_data["tel"],
+                           "order[billing_address]": profile_data["address_1"],
+                           "order[billing_address_2]": profile_data["address_2"],
+                           "order[billing_city]": profile_data["city"],
+                           "order[billing_zip]": profile_data["zip"],
+                           "order[billing_country]": profile_data["country"],
+                           "same_as_billing_address": 1,
+                           "credit_card[type]": profile_data["card_type"],
+                           "credit_card[cnb]": profile_data["card_number"],
+                           "credit_card[month]": profile_data["exp_month"],
+                           "credit_card[year]": profile_data["exp_year"],
+                           "credit_card[ovv]": profile_data["cvv"],
+                           "order[terms]": 1,
+                           }
     print(checkout_params)
     return checkout_params
 
 
-def send_checkout_request(s, delay, profile_data, start_checkout_time, sender):
+def send_checkout_request(s, delay, profile_data, start_checkout_time, sender, token):
     print("in send_checkout_request")
     headers = {
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/80.0.3987.95 Mobile/15E148 Safari/604.1',
@@ -81,7 +102,7 @@ def send_checkout_request(s, delay, profile_data, start_checkout_time, sender):
         'TE': 'Trailers',
     }
 
-    checkout_params = make_checkout_parameters(s, profile_data)
+    checkout_params = make_checkout_parameters(s, profile_data, token)
     print("checkout_params", checkout_params)
     sender(f"Sleeping for {delay}s")
     time.sleep(delay)

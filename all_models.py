@@ -26,6 +26,22 @@ def add_items(data):
         json.dump(in_data, file)
 
 
+def add_token(token):
+    with open("config.json", "r") as file:
+        in_data = json.load(file)
+        in_data["captcha_token"] = token
+    with open("config.json", "w") as file:
+        json.dump(in_data, file)
+
+
+def get_token():
+    with open("config.json", "r") as file:
+        in_data = json.load(file)
+    if "captcha_token" in in_data:
+        return in_data["captcha_token"]
+    return False
+
+
 def get_items():
     with open("config.json", "r") as file:
         in_data = json.load(file)

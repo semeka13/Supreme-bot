@@ -1,7 +1,7 @@
 import time
 
-from PyQt5.QtCore import QRunnable, pyqtSlot, QObject, pyqtSignal, QThread
-from all_models import get_drop, get_info, get_items
+from PyQt5.QtCore import QObject, pyqtSignal
+from all_models import get_drop, get_info, get_items, get_token
 from checkout import add_to_cart, send_checkout_request, get_order_status
 from get_params import get_size_style_ids, check_matching, get_stock
 
@@ -16,6 +16,7 @@ class Bot(QObject):
 
     def run(self):
         try:
+            captcha_token = get_token()
             self.signals.result.emit("Bot starting...\n")
             items = get_items()
             profile_data = get_info()
@@ -63,7 +64,7 @@ class Bot(QObject):
                                         break
                     if session:
                         self.signals.result.emit("Checking out...")
-                        if parser_checkout(session, delay, profile_data, time_1, self.signals.result.emit):
+                        if parser_checkout(session, delay, profile_data, time_1, self.signals.result.emit, captcha_token):
                             self.signals.result.emit(f"Time: {time.time() - time_1}")
                             print("time:", time.time() - time_1)
                             break
@@ -91,9 +92,9 @@ class BotSignals(QObject):
     progress = pyqtSignal()
 
 
-def parser_checkout(session, timer, profile_data, checkout_start_time, sender):
+def parser_checkout(session, timer, profile_data, checkout_start_time, sender, token):
     # Getting checkout response
-    checkout_response = send_checkout_request(session, timer, profile_data, checkout_start_time, sender)
+    checkout_response = send_checkout_request(session, timer, profile_data, checkout_start_time, sender, token)
     if get_order_status(session, checkout_response, sender):
         # Checking order status
         return True

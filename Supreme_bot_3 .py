@@ -1,9 +1,13 @@
+import logging
+from threading import Thread
+from harvester.server import Harvester
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 import sys
 
-from all_models import get_info, add_items, add_info, add_drop
+from all_models import get_info, add_items, add_info, add_drop, add_token, get_token
+from captcha import Captcha
 from run_bot import Bot
 
 
@@ -332,16 +336,33 @@ class Example(QListWidget):
         self.console_info = QTextBrowser(self)
         self.console_info.setFont(QFont('SansSerif', 11))
         self.console_info.setStyleSheet("border: 1px solid red; color: white;")
-        self.console_info.resize(320, 500)
-        self.console_info.move(610, 20)
+        self.console_info.resize(320, 520)
+        self.console_info.move(610, 60)
 
         self.open_website = QPushButton('Upcoming drop', self)
         self.open_website.setStyleSheet("border: 1px solid white; color: white;")
         self.open_website.resize(100, 20)
         self.open_website.setFont(QFont('SansSerif', 10))
-        self.open_website.clicked.connect(self.cancel_purchase_func)
         self.open_website.move(20, 530)
         self.open_website.clicked.connect(self.open_site)
+
+        self.captcha_label = QLabel(self)
+        self.captcha_label.setText("Use without captcha")
+        self.captcha_label.setFont(QFont('SansSerif', 11))
+        self.captcha_label.setStyleSheet("color: white")
+        self.captcha_label.move(610, 20)
+        self.captcha_label.resize(140, 20)
+
+        self.captcha_checkbox = QCheckBox('Captcha checkbox', self)
+        self.captcha_checkbox.move(750, 23)
+
+        self.captcha_button = QPushButton('Configure captcha', self)
+        self.captcha_button.setStyleSheet("border: 1px solid white; color: white;")
+        self.captcha_button.resize(120, 20)
+        self.captcha_button.setFont(QFont('SansSerif', 10))
+        self.captcha_button.move(800, 20)
+        self.captcha_button.clicked.connect(self.make_captcha_token)
+
         info = get_info()
 
         if info:
@@ -367,6 +388,24 @@ class Example(QListWidget):
             self.customer_card_number_info.setText(info['card_number'])
             self.customer_cvv_info.setText(info['cvv'])
         self.bot = None
+        self.captcha = None
+        self.captcha_thread = None
+
+    def make_captcha_token(self):
+        '''if self.captcha and self.captcha_thread:
+            self.captcha_thread.setTerminationEnabled()
+            self.captcha_thread.terminate()
+            self.captcha_thread.wait()'''
+        if not self.captcha_thread:
+            self.captcha_thread = QThread()
+            self.captcha = Captcha()
+        self.captcha.moveToThread(self.captcha_thread)
+        self.captcha.signals.result.connect(self.captcha_output)
+        self.captcha_thread.started.connect(self.captcha.run)
+        self.captcha_thread.start()
+
+    def captcha_output(self, text):
+        self.payment_exception.setText(text)
 
     def add_to_console(self, text):
         self.console_info.append(text)
@@ -398,6 +437,9 @@ class Example(QListWidget):
             self.thread.terminate()
             self.thread.wait()
         self.console_info.setText('')
+        if self.captcha_checkbox.isChecked() or not get_token():
+            add_token("")
+            self.console_info.setText('Starting without captcha token..')
         items = list()
         drop_date = (int(self.purchase_date_year_info.currentText()),
                      int(self.purchase_date_month_info.currentText()),
@@ -417,7 +459,6 @@ class Example(QListWidget):
                 self.bot.signals.finished.connect(self.add_to_console)
                 self.thread.started.connect(self.bot.run)
                 self.thread.start()
-                print(self.bot)
             else:
                 self.payment_exception.setText('Fill in payment data')
         else:
