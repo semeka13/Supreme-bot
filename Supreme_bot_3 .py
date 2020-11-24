@@ -336,7 +336,7 @@ class Example(QListWidget):
         self.console_info = QTextBrowser(self)
         self.console_info.setFont(QFont('SansSerif', 11))
         self.console_info.setStyleSheet("border: 1px solid red; color: white;")
-        self.console_info.resize(320, 520)
+        self.console_info.resize(320, 500)
         self.console_info.move(610, 60)
 
         self.open_website = QPushButton('Upcoming drop', self)
@@ -392,13 +392,12 @@ class Example(QListWidget):
         self.captcha_thread = None
 
     def make_captcha_token(self):
-        '''if self.captcha and self.captcha_thread:
+        if self.captcha and self.captcha_thread:
             self.captcha_thread.setTerminationEnabled()
             self.captcha_thread.terminate()
-            self.captcha_thread.wait()'''
-        if not self.captcha_thread:
-            self.captcha_thread = QThread()
-            self.captcha = Captcha()
+            self.captcha_thread.wait()
+        self.captcha_thread = QThread()
+        self.captcha = Captcha()
         self.captcha.moveToThread(self.captcha_thread)
         self.captcha.signals.result.connect(self.captcha_output)
         self.captcha_thread.started.connect(self.captcha.run)
@@ -493,6 +492,7 @@ class Example(QListWidget):
         info_data['exp_month'] = str(self.customer_card_exp_month_info.currentText())
         info_data['exp_year'] = str(self.customer_card_exp_year_info.currentText())
         info_data['cvv'] = self.customer_cvv_info.text()
+
 
         counter = 9
 

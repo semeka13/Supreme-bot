@@ -1,4 +1,5 @@
 import logging
+from signal import SIGTERM
 from threading import Thread
 
 from PyQt5.QtCore import QObject, pyqtSignal
@@ -35,6 +36,8 @@ class Captcha(QObject):
                 self.signals.result.emit('Captcha token not generated, \n'
                                                'try again.')
             server_thread.join()
+        except SIGTERM:
+            exit()
         except Exception:
             self.signals.result.emit('Captcha token not generated, \n'
                                            'try again.')
