@@ -1,6 +1,3 @@
-import logging
-from threading import Thread
-from harvester.server import Harvester
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
@@ -175,6 +172,7 @@ class Example(QListWidget):
         self.customer_cvv_text.move(20, 370)
 
         self.customer_cvv_info = QLineEdit(self)
+        self.customer_cvv_info.setEchoMode(QLineEdit.Password)
         self.customer_cvv_info.setStyleSheet("color: white;")
         self.customer_cvv_info.setFont(QFont('SansSerif', 11))
         self.customer_cvv_info.move(100, 370)
@@ -492,7 +490,6 @@ class Example(QListWidget):
         info_data['exp_month'] = str(self.customer_card_exp_month_info.currentText())
         info_data['exp_year'] = str(self.customer_card_exp_year_info.currentText())
         info_data['cvv'] = self.customer_cvv_info.text()
-
 
         counter = 9
 

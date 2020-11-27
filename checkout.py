@@ -85,7 +85,7 @@ def make_checkout_parameters(s, profile_data, token):
                            "order[terms]": 1,
                            }
     print(checkout_params)
-    return checkout_params
+    return checkout_params, cookie_sub
 
 
 def send_checkout_request(s, delay, profile_data, start_checkout_time, sender, token):
@@ -102,7 +102,7 @@ def send_checkout_request(s, delay, profile_data, start_checkout_time, sender, t
         'TE': 'Trailers',
     }
 
-    checkout_params = make_checkout_parameters(s, profile_data, token)
+    checkout_params, cookies = make_checkout_parameters(s, profile_data, token)
     print("checkout_params", checkout_params)
     sender(f"Sleeping for {delay}s")
     time.sleep(delay)
@@ -110,7 +110,7 @@ def send_checkout_request(s, delay, profile_data, start_checkout_time, sender, t
     print("checkout_request=", checkout_request)
     sender("Checkout request was sent")
     sender(f"Time: {round(time.time() - start_checkout_time, 2)}s")
-    return checkout_request
+    return checkout_request, cookies
 
 
 def get_order_id_status(s, order_id):
