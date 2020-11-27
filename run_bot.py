@@ -2,8 +2,8 @@ import time
 from PyQt5.QtCore import QObject, pyqtSignal
 from all_models import get_drop, get_info, get_items, get_token
 
-from checkout import add_to_cart, send_checkout_request, get_order_status
-from get_params import get_size_style_ids, check_matching, get_stock, get_drop_date
+from checkout import send_checkout_request, get_order_status
+from get_params import get_stock, get_drop_date
 from search_items import SearchItem
 
 
